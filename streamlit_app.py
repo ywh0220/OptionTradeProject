@@ -36,5 +36,5 @@ df = df[(df['Strategy']!= 'LEAPS Call') &
 
 #data_table.disable_dataframe_formatter()
 df.head()
-print(df['Option Expiry Date'].dtype)
+#print(df['Option Expiry Date'].dtype)
 
