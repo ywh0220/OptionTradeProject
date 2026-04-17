@@ -1,2 +1,4 @@
 streamlit
-st_supabase_connection
+supabase
+pandas
+plotly
