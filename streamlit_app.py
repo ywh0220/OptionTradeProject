@@ -1,40 +1,30 @@
 import streamlit as st
+from st_supabase_connection import SupabaseConnection
 
-st.title("🎈 My new app")
-st.write(
-    "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
-)
+st.title("OptionTradeLog Dashboard")
 
+# Initialize Supabase connection (reads from secrets automatically)
+conn = st.connection("supabase", type=SupabaseConnection)
 
-from google.colab import auth
-from google.colab import data_table
-import gspread
-from google.auth import default
-import pandas as pd
+# Fetch all data from your table
+response = conn.query("*", table="OptionTradeLog", ttl="10m").execute()
 
-auth.authenticate_user()          # This will ask you to login
-creds, _ = default()
-gc = gspread.authorize(creds)
+if response.data:
+    df = response.data   # This returns a list of dicts → Streamlit handles it well
 
-worksheet = gc.open("Option Trades").worksheet("Sheet1")
-# Get all data as list of lists (more reliable)
-# Tell gspread to use Row 2 as the header row
-df = pd.DataFrame(worksheet.get_all_records(head=2))
+    st.dataframe(df, use_container_width=True)
 
-date_cols = ['Trade Date', 'Position Closed Date', 'Option Expiry Date']
+    # Example charts (change column names to match yours)
+    col1, col2 = st.columns(2)
+    with col1:
+        if "Strike" in df[0] if df else False:
+            st.subheader("Strike Distribution")
+            st.bar_chart([row.get("Strike") for row in df if row.get("Strike")])
 
-for col in date_cols:
-    # 1. Clean whitespace
-    df[col] = df[col].astype(str).str.strip()
-    # 2. Convert to datetime
-    df[col] = pd.to_datetime(df[col], dayfirst=True, errors='coerce')
+    with col2:
+        if "DaysSince" in df[0] if df else False:
+            st.subheader("Days Since")
+            st.line_chart([row.get("DaysSince") for row in df if row.get("DaysSince")])
 
-df = df[(df['Strategy']!= 'LEAPS Call') &
-        (df['Option Expiry Date'] >= '2026-01-01')]
-
-
-
-#data_table.disable_dataframe_formatter()
-df.head()
-#print(df['Option Expiry Date'].dtype)
-
+else:
+    st.warning("No data found in the table.")
